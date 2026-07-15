@@ -8,7 +8,7 @@ import asyncio
 from typing import AsyncGenerator, Awaitable, Callable, Protocol, runtime_checkable
 
 from .auth.resolve import resolve_provider_auth
-from .auth.store import InMemoryCredentialStore
+from .auth.store import get_credential_store
 from .auth.types import AuthResult, CredentialStore, ProviderAuth, ModelAuth
 from .types import (
     AssistantMessage,
@@ -148,7 +148,7 @@ class Models:
     """
     def __init__(self):
         self._providers: dict[str, Provider] = {}
-        self._credentials: CredentialStore = InMemoryCredentialStore()
+        self._credentials: CredentialStore = get_credential_store()
 
     @property
     def credentials(self) -> CredentialStore:

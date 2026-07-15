@@ -7,12 +7,12 @@ import asyncio
 from typing import Dict
 
 from .types import Credential, CredentialStore
+from .file_store import FileCredentialStore
 
 
 class InMemoryCredentialStore(CredentialStore):
     """
     A simple in-memory credential store for development/testing.
-    In a real app, you would replace this with a secure keychain or database.
     """
 
     def __init__(self) -> None:
@@ -30,3 +30,16 @@ class InMemoryCredentialStore(CredentialStore):
     async def delete(self, provider: str) -> None:
         async with self._lock:
             self._store.pop(provider, None)
+
+
+# Default global store instance
+_default_store: CredentialStore | None = None
+
+def get_credential_store() -> CredentialStore:
+    """
+    Returns the default credential store (FileCredentialStore pointing to .credentials.json).
+    """
+    global _default_store
+    if _default_store is None:
+        _default_store = FileCredentialStore(".credentials.json")
+    return _default_store

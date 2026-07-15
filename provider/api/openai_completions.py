@@ -344,7 +344,15 @@ class OpenAICompletionsApi(ProviderStreams):
             
         except Exception as e:
             output.stop_reason = "error"
-            output.error_message = str(e)
+            
+            error_msg = str(e)
+            # 尝试捕获 openai 的详细 HTTP 报错体
+            if hasattr(e, "response") and hasattr(e.response, "text"):
+                error_msg += f" - Response: {e.response.text}"
+            elif hasattr(e, "body"):
+                error_msg += f" - Body: {getattr(e, 'body')}"
+                
+            output.error_message = error_msg
             yield ErrorEvent(reason="error", error=output)
 
     async def stream(self, model: Model, context: Context, options: StreamOptions | None = None) -> AsyncGenerator[StreamEvent, None]:

@@ -183,3 +183,23 @@ def transform_messages(
             
     insert_synthetic_tool_results()
     return result
+
+
+'''
+transform_messages.py 并不是专门绑定给 openai_completions.py 的，它是一个独立于底层 API 协议的“通用消息中间件（Middleware）”。
+
+在我们的架构中，消息流转是分两步走的：
+
+第一步：逻辑归一化 (transform_messages.py)
+它的输入是：我们的标准 Message 数组。 它的输出是：依旧是标准 Message 数组，但是经过了重新编排。 它的职责是处理不同大模型在逻辑能力上的残缺或怪癖。比如：
+
+OpenAI 的 o1 模型不支持 system 角色，transform_messages.py 就会把 system 强行塞进第一个 user 消息里。
+某些老旧的开源模型不支持连续发两条 user 消息，它就会把多条 user 消息合并成一条。
+这部分逻辑只和 compat（模型的特性档案）有关，和走什么网络协议完全无关。
+第二步：协议序列化 (比如 openai_completions.py)
+它的输入是：刚才归一化好的标准 Message 数组。 它的输出是：发往网络的 HTTP JSON 参数。 它的职责仅仅是将标准结构翻译成特定厂商的 API 格式。
+
+openai_completions.py 负责把它翻译成 [{"role": "user", "content": "..."}]。
+如果未来我们接入了 Anthropic (Claude)，我们会写一个 anthropic_messages.py，它负责把同样的 Message 翻译成 Claude 特有的结构。
+总结： transform_messages.py 是一道“安检门”。不管你是发往 OpenAI 还是发往未来的 Claude，所有消息在发送前，都要先过这道门，把模型不认识的语法（比如孤儿 ToolCall、不支持的 system 提示词）统统在这个阶段清洗干净！
+'''
